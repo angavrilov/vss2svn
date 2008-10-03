@@ -1508,7 +1508,7 @@ EOSQL
     my $autoprops = Vss2Svn::Dumpfile::AutoProps->new($gCfg{auto_props}) if $gCfg{auto_props};
     my $labelmapper = Vss2Svn::Dumpfile::LabelMapper->new($gCfg{label_mapper}) if $gCfg{label_mapper};
     my $dumpfile = Vss2Svn::Dumpfile->new($fh, $autoprops, $gCfg{md5}, $labelmapper);
-    Vss2Svn::Dumpfile->SetTempDir($gCfg{tempdir});
+    Vss2Svn::Dumpfile->SetTempDir($gCfg{dbdir});
 
     init_progress 'Processing', $total_count;
 
@@ -1636,6 +1636,7 @@ Start Time   : $starttime
 
 VSS Dir      : $gCfg{vssdir}
 Temp Dir     : $gCfg{tempdir}
+DB Dir       : $gCfg{dbdir}
 Dumpfile     : $gCfg{dumpfile}
 VSS Encoding : $gCfg{encoding}
 Auto Props   : $auto_props
@@ -2308,8 +2309,9 @@ sub Initialize {
     $gCfg{encoding} = 'windows-1252' if !defined($gCfg{encoding});
 
     # Commit messages for SVN placed here.
-    $gCfg{svncomment} = "$gCfg{tempdir}/svncomment.tmp.txt";
+    $gCfg{svncomment} = "$gCfg{dbdir}/svncomment.tmp.txt";
     mkdir $gCfg{tempdir} unless (-d $gCfg{tempdir});
+    mkdir $gCfg{dbdir} unless (-d $gCfg{dbdir});
 
     # Directories for holding VSS revisions
     $gCfg{vssdata} = "$gCfg{tempdir}/vssdata";
