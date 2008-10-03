@@ -964,6 +964,7 @@ sub add_error {
     my($self, $msg) = @_;
 
     push @{ $self->{errors} }, $msg;
+    print STDERR $msg, "\n";
 }  #  End add_error
 
 
