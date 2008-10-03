@@ -1973,6 +1973,13 @@ sub ConnectDatabase {
                               {RaiseError => 1, AutoCommit => 1})
         or die "Couldn't connect database $db: $DBI::errstr";
 
+    $gCfg{dbh}->do("PRAGMA cache_size = 20000");
+    $gCfg{dbh}->do("PRAGMA temp_store_directory = '$gCfg{dbdir}'");
+
+    # Disable fsync for speed, if requested
+    $gCfg{dbh}->do('PRAGMA synchronous = OFF')
+        if $gCfg{nosync};
+
 }  #  End ConnectDatabase
 
 ###############################################################################
@@ -2276,9 +2283,10 @@ sub Initialize {
     $| = 1;
 
     GetOptions(\%gCfg,'vssdir=s','tempdir=s','dumpfile=s','resume','verbose',
-               'reuse_cache','prompt','no_orphaned','no_labels',
+               'reuse_cache','prompt','no_orphaned','no_labels','dbdir=s',
                'debug','timing+','task=s','revtimerange=i','ssphys=s',
-               'encoding=s','trunkdir=s','auto_props=s', 'label_mapper=s', 'md5');
+               'encoding=s','trunkdir=s','auto_props=s', 'label_mapper=s',
+               'nosync', 'md5');
 
     &GiveHelp("Must specify --vssdir") if !defined($gCfg{vssdir});
     $gCfg{tempdir} = './_vss2svn' if !defined($gCfg{tempdir});
@@ -2292,7 +2300,8 @@ sub Initialize {
         die "label_mapper file '$gCfg{label_mapper}' is not readable";
     }
 
-    $gCfg{sqlitedb} = "$gCfg{tempdir}/vss_data.db";
+    $gCfg{dbdir} ||= $gCfg{tempdir};
+    $gCfg{sqlitedb} = "$gCfg{dbdir}/vss_data.db";
 
     # XML output from ssphysout placed here.
     $gCfg{ssphysout} = "$gCfg{tempdir}/ssphysout";
@@ -2439,6 +2448,8 @@ OPTIONAL PARAMETERS:
     --ssphys <path>   : Full path to ssphys.exe program; uses PATH otherwise
     --tempdir <dir>   : Temp directory to use during conversion;
                         default is ./_vss2svn
+    --dbdir <dir>     : Temp directory to use for the db file, e.g. a ram disk.
+                        default is the value of --tempdir
     --dumpfile <file> : specify the subversion dumpfile to be created;
                         default is ./vss2svn-dumpfile.dat
     --revtimerange <sec> : specify the difference between two ss actions
@@ -2468,6 +2479,8 @@ OPTIONAL PARAMETERS:
     --label_mapper    : INI style file to map labels to different locataions
     --no_orphaned     : Do not generate the orphaned cache
     --no_labels       : Do not convert labels
+    --nosync          : Disable using fsync in SQLite. Processing is faster, but a
+                        system crash will corrupt the database.
 EOTXT
 
     exit(1);
