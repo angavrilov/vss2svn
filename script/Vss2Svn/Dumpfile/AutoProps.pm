@@ -19,7 +19,13 @@ sub new {
     my ($enabled) = $config->get (['miscellany', 'enable-auto-props']);
     if (defined $enabled && $enabled eq "yes") {
         my $autoprops_list = $config->get (['auto-props']);
-
+        
+        my $defaults = $config->get(['vss2svn', 'default-props']);
+        if (defined $defaults && $defaults) {
+                push @{$self->{entries}},
+                    { glob => qr/.*/, props => [ $defaults ] };
+        }
+        
         # see http://subversion.tigris.org/servlets/ReadMsg?list=svn&msgNo=29642
         # matches are performed in a case-insensitive manner
 
@@ -57,8 +63,12 @@ sub get_props {
                 my @props = split ';', $autoprop;
                 foreach my $prop (@props)
                 {
-                    my ($key, $value) = split '=', $prop;
-                    $newprops{$key} = $value;
+                    if (substr($prop,0,1) eq '!') {
+                        delete $newprops{substr($prop,1)};
+                    } else {
+                        my ($key, $value) = split '=', $prop;
+                        $newprops{$key} = $value;
+                    }
                 }
             }
         }
