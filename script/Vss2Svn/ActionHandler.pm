@@ -446,7 +446,7 @@ sub _move_handler {
 
     # '$itempath' contains the move target path
     my $parentpath = $self->_get_current_parent_path ();
-    my $itempath = $parentpath . $physinfo->{name}; # $row->{itemname};
+    my $itempath = $parentpath . $row->{itemname};
 
 
     if (!defined($sourceparent)) {
@@ -489,17 +489,17 @@ sub _restore_handler {
 #    $row->{info} = $row->{parentphys};
 #    $row->{parentphys} = '_' . $row->{physname};
     
-    $gPhysInfo{ $row->{physname} } =
+    $gPhysInfo{ $row->{physname} } ||=
         {
          type       => $row->{itemtype},
          name       => $row->{itemname},
          parents    => {},
-         first_version => $gPhysInfo{ $row->{physname} }{first_version} || 1,
-         last_version => $gPhysInfo{ $row->{physname} }{last_version} || 1,
+         first_version => 1,
+         last_version => 1,
          orphaned   => 1,
          was_binary => $row->{is_binary},
     };
-    
+  
     my $newName = $row->{info};
 
     if ($newName && $newName eq '/') {
@@ -508,6 +508,11 @@ sub _restore_handler {
     }
     
     undef $row->{info};
+
+    unless ($gPhysInfo{ $row->{physname} }{orphaned}) {
+	my @parents = keys %{$gPhysInfo{ $row->{physname} }{parents}};
+	$row->{info} = $parents[0] if @parents;
+    }
 
     return $self->_move_handler ($newName);
 }
