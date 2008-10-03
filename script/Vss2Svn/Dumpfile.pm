@@ -792,17 +792,22 @@ sub output_node {
     my $eolStyle = $tmpProps{'svn:eol-style'};
     my $isNative = (defined $eolStyle && $eolStyle eq 'native') ? 1 : 0;
 
+    if ($isNative && exists $node->{props}{'svn:mime-type'} &&
+        $node->{props}{'svn:mime-type'} eq 'application/octet-stream') {
+        $self->add_error("Binary file '$node->{path}' has svn:eol-style=native");
+    }
+    
     my $string = $node->get_headers();
     print $fh $string;
     $self->output_content($node->{hideprops}? undef : $node->{props},
-                          $node->{text}, $node->{file}, $isNative);
+                          $node->{text}, $node->{file}, $isNative, $node->{path});
 }  #  End output_node
 
 ###############################################################################
 #  output_content
 ###############################################################################
 sub output_content {
-    my($self, $props, $text, $file, $isNative) = @_;
+    my($self, $props, $text, $file, $isNative, $itempath) = @_;
 
     my $fh = $self->{fh};
 
@@ -839,20 +844,45 @@ sub output_content {
     # convert CRLF -> LF before calculating the size and compute the md5
     if(!defined $text && defined $file) {
             
-        my ($input, $output);
+        my ($input, $output, $check);
         if (defined $isNative && $isNative) {
             open ($input, "<:crlf", $file);
             my $tmpFile = "$gTmpDir/crlf_to_lf.tmp.txt";
             open ($output, ">", $tmpFile);
             binmode ($output);
+            my $tmpFile2 = "$gTmpDir/crlf_to_crlf.tmp.txt";
+            open ($check, ">:crlf", $tmpFile2);
 
             while(<$input>) {
                 $md5->add($_) if $self->{do_md5};
                 print $output $_;
+                print $check $_;
             }
             
             close $input;
             close $output;
+            close $check;
+            
+            if ((-s $tmpFile2) != (-s $file)) {
+                $self->add_error("Lossy CRLF conversion in item '$itempath': ".(-s $file)." resized to ".(-s $tmpFile2));
+            } elsif ($main::gCfg{paranoid_crlf}) {
+                my $old_md5 = Digest::MD5->new;
+                open ($input, "<", $file);
+                binmode ($input);
+                $old_md5->addfile($input);
+                close $input;
+                
+                my $new_md5 = Digest::MD5->new;
+                open ($input, "<", $tmpFile2);
+                binmode ($input);
+                $new_md5->addfile($input);
+                close $input;
+                
+                if ($old_md5->hexdigest ne $new_md5->hexdigest) {
+                    $self->add_error("Lossy CRLF conversion in item '$itempath': MD5 signature changed");
+                }
+            }
+            
             $file = $tmpFile;
         }
         else {

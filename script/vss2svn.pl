@@ -2287,7 +2287,7 @@ sub Initialize {
                'reuse_cache','prompt','no_orphaned','no_labels','dbdir=s',
                'debug','timing+','task=s','revtimerange=i','ssphys=s',
                'encoding=s','trunkdir=s','auto_props=s', 'label_mapper=s',
-               'nosync', 'md5');
+               'nosync', 'md5', 'paranoid_crlf');
 
     &GiveHelp("Must specify --vssdir") if !defined($gCfg{vssdir});
     $gCfg{tempdir} = './_vss2svn' if !defined($gCfg{tempdir});
@@ -2477,6 +2477,8 @@ OPTIONAL PARAMETERS:
                         converted repository (default = "/")
     --auto_props      : Specify an autoprops ini file to use, e.g.
                         --auto_props="c:/Dokumente und Einstellungen/user/Anwendungsdaten/Subversion/config"
+    --paranoid_crlf   : When doing CRLF conversions, check reversability not only by
+                        comparing the file size, but also by computing MD5 signatures
     --md5             : generate md5 checksums
     --label_mapper    : INI style file to map labels to different locataions
     --no_orphaned     : Do not generate the orphaned cache
