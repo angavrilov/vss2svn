@@ -129,6 +129,7 @@ sub new_revision {
     $self->{svncache}->add( @{ $data }{qw(timestamp author comment)} );
     $self->{revnum} = $self->{svncache}->{pkey};
     $self->{seen} = {};
+    $self->{seen_paths} = {};
     $self->{last_action} = {};
     $self->{commitPending} = undef;
 
